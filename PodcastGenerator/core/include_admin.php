@@ -27,6 +27,7 @@ include 'feed_generator.php';
 include 'pinger.php';
 include 'buttons.php';
 include 'freebox.php';
+include 'default_description.php';
 // Until Podcast Generator 3.0 passwords were stored in MD5, which is inseucre since 2005
 // This file is wizard to convert old password to a more secure algorithim
 // Load useful functions

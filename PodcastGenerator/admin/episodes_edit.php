@@ -85,6 +85,20 @@ if (sizeof($_POST) > 0) {
         goto error;
     }
 
+    if (isset($_POST['episode'])) {
+        if (!ctype_digit($_POST['episode'])) {
+            $error = _("Episode should be an integer number");
+            goto error;
+        }
+    }
+
+    if (isset($_POST['season'])) {
+        if (!ctype_digit($_POST['season'])) {
+            $error = _("Season should be an integer number");
+            goto error;
+        }
+    }
+
     $link = str_replace('?', '', $config['link']);
     $link = str_replace('=', '', $link);
     $link = str_replace('$url', '', $link);
@@ -108,6 +122,11 @@ if (sizeof($_POST) > 0) {
     // of the short description.
     $long_desc = empty($_POST['longdesc']) ? $_POST['shortdesc'] : $_POST['longdesc'];
 
+    if (strlen($long_desc) > 4000) {
+        $error = _("Description should not exceed 4000 characters");
+        goto error;
+    }
+
     // Regenerate GUID if it is missing from POST data
     $guid = empty($_POST['guid']) ? $config['url'] . "?" . $link . "=" . $_GET['name'] : $_POST['guid'];
 
@@ -120,14 +139,19 @@ if (sizeof($_POST) > 0) {
 	    <titlePG>' . htmlspecialchars($_POST['title'], ENT_NOQUOTES) . '</titlePG>
 	    <shortdescPG><![CDATA[' . $_POST['shortdesc'] . ']]></shortdescPG>
 	    <longdescPG><![CDATA[' . $long_desc . ']]></longdescPG>
+        <titleEP>' . $_POST['titleep'] . '</titleEP>
+        <episode>' . $_POST['episode'] . '</episode>
+        <season>' . (isset($_POST['season']) ? $_POST['season'] : '1') . '</season>
+        <type>' . (isset($_POST['type']) ? $_POST['type'] : 'Full') . '</type>
 	    <imgPG></imgPG>
 	    <categoriesPG>
 	        <category1PG>' . htmlspecialchars($_POST['category'][0]) . '</category1PG>
 	        <category2PG>' . htmlspecialchars($_POST['category'][1]) . '</category2PG>
 	        <category3PG>' . htmlspecialchars($_POST['category'][2]) . '</category3PG>
 	    </categoriesPG>
-	    <keywordsPG>' . htmlspecialchars($_POST['keywords']) . '</keywordsPG>
+	    <keywordsPG></keywordsPG>
 	    <explicitPG>' . $_POST['explicit'] . '</explicitPG>
+	    <appendDefaultDesc>' . $_POST['appendDD'] . '</appendDefaultDesc>
 	    <authorPG>
 	        <namePG>' . htmlspecialchars($_POST['authorname']) . '</namePG>
 	        <emailPG>' . htmlspecialchars($_POST['authoremail']) . '</emailPG>
@@ -151,6 +175,9 @@ if (sizeof($_POST) > 0) {
 }
 // Get episode data
 $episode = simplexml_load_file($config['absoluteurl'] . $config['upload_dir'] . pathinfo($config['absoluteurl'] . $config['upload_dir'] . $_GET['name'], PATHINFO_FILENAME) . '.xml');
+
+// Get def desc
+$def_desc = getDefaultDescription("../");
 ?>
 <!DOCTYPE html>
 <html>
@@ -184,6 +211,26 @@ $episode = simplexml_load_file($config['absoluteurl'] . $config['upload_dir'] . 
                     <div class="form-group">
                         <?php echo _('Title'); ?>*:<br>
                         <input type="text" name="title" class="form-control" value="<?php echo htmlspecialchars($episode->episode->titlePG); ?>" required>
+                    </div>
+                    <div class="form-group">
+                        <?php echo _('Episode Title'); ?>:<br>
+                        <input type="text" name="titleep" class="form-control" value="<?php echo htmlspecialchars($episode->episode->titleEP); ?>" required>
+                    </div>
+                    <div class="form-group">
+                        <?php echo _('Episode'); ?>:<br>
+                        <input type="text" name="episode" class="form-control" value="<?php echo htmlspecialchars($episode->episode->episode); ?>">
+                    </div>
+                    <div class="form-group">
+                        <?php echo _('Season'); ?>:<br>
+                        <input type="text" name="season" class="form-control" value="<?php echo htmlspecialchars($episode->episode->season); ?>">
+                    </div>
+                    <div class="form-group">
+                        <?php echo _('Type'); ?>:<br>
+                        <select name="type">
+                            <option value="Full" selected>Full episode</option>
+                            <option value="Trailer">Trailer</option>
+                            <option value="Bonus">Bonus episode</option>
+                        </select>
                     </div>
                     <div class="form-group">
                         <?php echo _('Short Description'); ?>*:<br>
@@ -222,11 +269,21 @@ $episode = simplexml_load_file($config['absoluteurl'] . $config['upload_dir'] . 
                     <hr>
                     <div class="form-group">
                         <?php echo _('Long Description'); ?>:<br>
-                        <textarea name="longdesc"><?php echo htmlspecialchars($episode->episode->longdescPG); ?></textarea><br>
-                    </div>
-                    <div class="form-group">
-                        <?php echo _('iTunes Keywords'); ?>:<br>
-                        <input type="text" name="itunesKeywords" value="<?php echo htmlspecialchars($episode->episode->keywordsPG); ?>" placeholder="Keyword1, Keyword2 (max 12)" class="form-control"><br>
+                        <textarea cols="60" rows="10" name="longdesc"><?php echo htmlspecialchars($episode->episode->longdescPG); ?></textarea><br>
+                        <div class="form-group">
+                            <?php echo _('Append default description'); ?>:<br>
+                            <label><input type="radio" value="yes" name="appendDD" <?php if($episode->episode->appendDefaultDesc == 'yes') { echo 'checked'; } ?>> <?php echo _('Yes'); ?></label>
+                            <label><input type="radio" value="no" name="appendDD" <?php if($episode->episode->appendDefaultDesc == 'no') { echo 'checked'; } ?>> <?php echo _('No'); ?></label><br>
+                        </div>
+                        <?php echo _("Preview"); ?>:<br>
+                        <div class="card">
+                            <div class="card-body">
+                                <?php echo $episode->episode->longdescPG ?>
+                                <?php if ($episode->episode->appendDefaultDesc == "yes") {
+                                    echo $def_desc;
+                                } ?>
+                            </div>
+                        </div>
                     </div>
                     <div class="form-group">
                         <?php echo _('Explicit Content'); ?>:<br>

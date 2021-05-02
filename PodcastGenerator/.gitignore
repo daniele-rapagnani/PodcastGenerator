@@ -1,6 +1,7 @@
 categories.xml
 config.php
 freebox-content.txt
+default-description.html
 rsscache_*
 feed.xml
 themes/testtheme
