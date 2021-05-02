@@ -13,30 +13,36 @@ require '../core/include_admin.php';
 if (!isset($_GET['name'])) {
     die(_('No name given'));
 }
-if (!file_exists('../' . $config['upload_dir'] . $_GET['name'])) {
+
+checkPath($_GET['name']);
+
+if (!file_exists($config['absoluteurl'] . $config['upload_dir'] . $_GET['name'])) {
     die(_('Episode does not exist'));
 }
 
 // Delete episode
 if (isset($_GET['delete'])) {
+    checkToken();
     // Delete the audio file
-    unlink('../' . $config['upload_dir'] . $_GET['name']);
+    unlink($config['absoluteurl'] . $config['upload_dir'] . $_GET['name']);
     // Delete the XML file
-    unlink('../' . $config['upload_dir'] . pathinfo('../' . $config['upload_dir'] . $_GET['name'], PATHINFO_FILENAME) . '.xml');
+    unlink($config['absoluteurl'] . $config['upload_dir'] . pathinfo($config['absoluteurl'] . $config['upload_dir'] . $_GET['name'], PATHINFO_FILENAME) . '.xml');
     // Delete the image file if it exists
-    if(file_exists('../' . $config['img_dir'] . pathinfo('../' . $config['upload_dir'] . $_GET['name'], PATHINFO_FILENAME) . '.jpg') ||
-    file_exists('../' . $config['img_dir'] . pathinfo('../' . $config['upload_dir'] . $_GET['name'], PATHINFO_FILENAME) . '.png'))
+    if(file_exists($config['absoluteurl'] . $config['img_dir'] . pathinfo($config['absoluteurl'] . $config['upload_dir'] . $_GET['name'], PATHINFO_FILENAME) . '.jpg') ||
+    file_exists($config['absoluteurl'] . $config['img_dir'] . pathinfo($config['absoluteurl'] . $config['upload_dir'] . $_GET['name'], PATHINFO_FILENAME) . '.png'))
     {
-        unlink('../' . $config['img_dir'] . pathinfo('../' . $config['upload_dir'] . $_GET['name'], PATHINFO_FILENAME) . '.jpg');
-        unlink('../' . $config['img_dir'] . pathinfo('../' . $config['upload_dir'] . $_GET['name'], PATHINFO_FILENAME) . '.png');
+        unlink($config['absoluteurl'] . $config['img_dir'] . pathinfo($config['absoluteurl'] . $config['upload_dir'] . $_GET['name'], PATHINFO_FILENAME) . '.jpg');
+        unlink($config['absoluteurl'] . $config['img_dir'] . pathinfo($config['absoulteurl'] . $config['upload_dir'] . $_GET['name'], PATHINFO_FILENAME) . '.png');
     }
     generateRSS();
+    pingServices();
     header('Location: '.$config['url'].$config['indexfile']);
     die();
 }
 
 // Edit episode
 if (sizeof($_POST) > 0) {
+    checkToken();
     // CHeck if all fields are set
     $req_fields = [
         $_POST['title'],
@@ -79,7 +85,11 @@ if (sizeof($_POST) > 0) {
         goto error;
     }
 
-    $targetfile = '../' . $config['upload_dir'] . $_GET['name'];
+    $link = str_replace('?', '', $config['link']);
+    $link = str_replace('=', '', $link);
+    $link = str_replace('$url', '', $link);
+
+    $targetfile = $config['absoluteurl'] . $config['upload_dir'] . $_GET['name'];
 
     // Get datetime
     $datetime = strtotime($_POST["date"] . ' ' . $_POST['time']);
@@ -97,22 +107,26 @@ if (sizeof($_POST) > 0) {
     // Automatically fill an empty long description with the contents
     // of the short description.
     $long_desc = empty($_POST['longdesc']) ? $_POST['shortdesc'] : $_POST['longdesc'];
-        
+
+    // Regenerate GUID if it is missing from POST data
+    $guid = empty($_POST['guid']) ? $config['url'] . "?" . $link . "=" . $_GET['name'] : $_POST['guid'];
+
     // Go and actually generate the episode
     // It easier to not dynamically generate the file
     $episodefeed = '<?xml version="1.0" encoding="utf-8"?>
 <PodcastGenerator>
 	<episode>
-	    <titlePG><![CDATA[' . htmlspecialchars($_POST['title'], ENT_NOQUOTES) . ']]></titlePG>
-	    <shortdescPG><![CDATA[' . htmlspecialchars($_POST['shortdesc']) . ']]></shortdescPG>
-	    <longdescPG><![CDATA[' . htmlspecialchars($long_desc) . ']]></longdescPG>
+	    <guid>' . htmlspecialchars($guid) . '</guid>
+	    <titlePG>' . htmlspecialchars($_POST['title'], ENT_NOQUOTES) . '</titlePG>
+	    <shortdescPG><![CDATA[' . $_POST['shortdesc'] . ']]></shortdescPG>
+	    <longdescPG><![CDATA[' . $long_desc . ']]></longdescPG>
 	    <imgPG></imgPG>
 	    <categoriesPG>
 	        <category1PG>' . htmlspecialchars($_POST['category'][0]) . '</category1PG>
 	        <category2PG>' . htmlspecialchars($_POST['category'][1]) . '</category2PG>
 	        <category3PG>' . htmlspecialchars($_POST['category'][2]) . '</category3PG>
 	    </categoriesPG>
-	    <keywordsPG><![CDATA[' . htmlspecialchars($_POST['keywords']) . ']]></keywordsPG>
+	    <keywordsPG>' . htmlspecialchars($_POST['keywords']) . '</keywordsPG>
 	    <explicitPG>' . $_POST['explicit'] . '</explicitPG>
 	    <authorPG>
 	        <namePG>' . htmlspecialchars($_POST['authorname']) . '</namePG>
@@ -126,8 +140,9 @@ if (sizeof($_POST) > 0) {
 	    </fileInfoPG>
 	</episode>
 </PodcastGenerator>';
-    file_put_contents('../' . $config['upload_dir'] . pathinfo($targetfile, PATHINFO_FILENAME) . '.xml', $episodefeed);
+    file_put_contents($config['absoluteurl'] . $config['upload_dir'] . pathinfo($targetfile, PATHINFO_FILENAME) . '.xml', $episodefeed);
     generateRSS();
+    pingServices();
     // Redirect if success
     header('Location: ' . $config['url'] . $config['indexfile'] . $config['link'] . $_GET['name'] . '');
     die();
@@ -135,7 +150,7 @@ if (sizeof($_POST) > 0) {
     error: echo ("");
 }
 // Get episode data
-$episode = simplexml_load_file('../' . $config['upload_dir'] . pathinfo('../' . $config['upload_dir'] . $_GET['name'], PATHINFO_FILENAME) . '.xml');
+$episode = simplexml_load_file($config['absoluteurl'] . $config['upload_dir'] . pathinfo($config['absoluteurl'] . $config['upload_dir'] . $_GET['name'], PATHINFO_FILENAME) . '.xml');
 ?>
 <!DOCTYPE html>
 <html>
@@ -165,6 +180,7 @@ $episode = simplexml_load_file('../' . $config['upload_dir'] . pathinfo('../' . 
                 <div class="col-6">
                     <h3><?php echo _('Main Information'); ?></h3>
                     <hr>
+                    <input type="hidden" name="guid" value="<?php echo htmlspecialchars($episode->episode->guid); ?>">
                     <div class="form-group">
                         <?php echo _('Title'); ?>*:<br>
                         <input type="text" name="title" class="form-control" value="<?php echo htmlspecialchars($episode->episode->titlePG); ?>" required>
@@ -196,9 +212,9 @@ $episode = simplexml_load_file('../' . $config['upload_dir'] . pathinfo('../' . 
                         <?php echo _('Publication Date'); ?>:<br>
                         <small><?php echo _('If you select a date in the future, it will be published then'); ?></small><br>
                         <?php echo _('Date'); ?>*:<br>
-                        <input name="date" type="date" value="<?php echo date('Y-m-d', filemtime('../' . $config['upload_dir'] . $_GET['name'])); ?>" required><br>
+                        <input name="date" type="date" value="<?php echo date('Y-m-d', filemtime($config['absoluteurl'] . $config['upload_dir'] . $_GET['name'])); ?>" required><br>
                         <?php echo _('Time'); ?>*:<br>
-                        <input name="time" type="time" value="<?php echo date('H:i', filemtime('../' . $config['upload_dir'] . $_GET['name'])); ?>" required><br>
+                        <input name="time" type="time" value="<?php echo date('H:i', filemtime($config['absoluteurl'] . $config['upload_dir'] . $_GET['name'])); ?>" required><br>
                     </div>
                 </div>
                 <div class="col-6">
@@ -214,20 +230,25 @@ $episode = simplexml_load_file('../' . $config['upload_dir'] . pathinfo('../' . 
                     </div>
                     <div class="form-group">
                         <?php echo _('Explicit Content'); ?>:<br>
-                        <input type="radio" value="yes" name="explicit" <?php if($episode->episode->explicitPG == 'yes') { echo 'checked'; } ?>> Yes <input type="radio" value="no" name="explicit" <?php if($episode->episode->explicitPG == 'no') { echo 'checked'; } ?>> No<br>
+                        <label><input type="radio" value="yes" name="explicit" <?php if($episode->episode->explicitPG == 'yes') { echo 'checked'; } ?>> <?php echo _('Yes'); ?></label>
+                        <label><input type="radio" value="no" name="explicit" <?php if($episode->episode->explicitPG == 'no') { echo 'checked'; } ?>> <?php echo _('No'); ?></label><br>
                     </div>
                     <div class="form-group">
                         <?php echo _('Author'); ?>*:<br>
                         <input type="text" class="form-control" name="authorname" placeholder="Author Name" value="<?php echo htmlspecialchars($episode->episode->authorPG->namePG); ?>"><br>
                         <input type="email" class="form-control" name="authoremail" placeholder="Author E-Mail" value="<?php echo htmlspecialchars($episode->episode->authorPG->emailPG); ?>"><br>
                     </div>
+                    <input type="hidden" name="token" value="<?php echo $_SESSION['token']; ?>">
                     <input type="submit" class="btn btn-success btn-lg" value="<?php echo _('Save Changes'); ?>">
                 </div>
             </div>
         </form>
         <hr>
         <h3><?php echo _('Delete Episode'); ?></h3>
-        <a href="episodes_edit.php?name=<?php echo htmlspecialchars($_GET['name']); ?>&delete=1" class="btn btn-danger">Delete</a>
+        <form action="episodes_edit.php?name=<?php echo htmlspecialchars($_GET['name']); ?>&delete=1" method="POST">
+            <input type="hidden" name="token" value="<?php echo $_SESSION['token']; ?>">
+            <input type="submit" class="btn btn-danger" value="<?php echo _('Delete'); ?>">
+        </form>
     </div>
     <script type="text/javascript">
         function shortDescCheck() {

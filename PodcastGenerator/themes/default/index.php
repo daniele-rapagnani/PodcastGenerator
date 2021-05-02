@@ -12,6 +12,7 @@
     <meta name="description" content="<?php echo htmlspecialchars($config["podcast_subtitle"]); ?>">
     <meta name="author" content="<?php echo htmlspecialchars($config["author_name"]); ?>">
     <link rel="shortcut icon" type="image/x-icon" href="favicon.ico">
+    <link rel="alternate" type="application/rss+xml" title="Subscribe to <?php echo htmlspecialchars($config["podcast_title"]); ?>" href="feed.xml">
 
 	<!-- Global site tag (gtag.js) - Google Analytics -->
 	<script async src="https://www.googletagmanager.com/gtag/js?id=G-5JCXLP8PLS"></script>
@@ -53,6 +54,24 @@
         echo '    <meta property="og:url" content="' . $config["url"] . 'index.php?name=' . $correctepisode["episode"]["filename"] . '" />' . "\n";
         echo '    <meta property="og:image" content="' . $img . '" />' . "\n";
         echo '    <meta property="og:description" content="' . $config["podcast_description"] . '" />' . "\n";
+        if (strtolower($config["enablestreaming"]) == "yes") {
+            // Get mime
+            $mime = getmime($config["absoluteurl"] . $config["upload_dir"] . $correctepisode["episode"]["filename"]);
+            if (!$mime)
+                $mime = null;
+            $type = '';
+            if (substr($mime, 0, 5) == 'video') {
+                $type = 'video';
+            } elseif (substr($mime, 0, 5) == 'audio' || $mime == 'application/ogg') {
+                $type = 'audio';
+            }
+            if ($type == 'audio' || $type == 'video') {
+                echo '    <meta property="og:' . $type . '" content="' . $config["url"] . $config["upload_dir"] . $correctepisode["episode"]["filename"] . '" />' . "\n";
+                if ($mime) {
+                    echo '    <meta property="og:' . $type . ':type" content="' . $mime . '" />' . "\n";
+                }
+            }
+        }
     } else {
         echo '    <meta property="og:title" content="' . $config["podcast_title"] . '" />' . "\n";
         echo '    <meta property="og:type" content="article" />' . "\n";
@@ -95,7 +114,7 @@
         }
         ?>
         <hr>
-        <p>Powered by <a href="http://podcastgenerator.net">Podcast Generator</a>, an open source podcast publishing solution | Theme based on <a href="https://getbootstrap.org">Bootstrap</a></p>
+        <p>Powered by <a href="http://podcastgenerator.net">Podcast Generator</a>, an open source podcast publishing solution | Theme based on <a href="https://getbootstrap.com">Bootstrap</a></p>
     </div>
 </body>
 

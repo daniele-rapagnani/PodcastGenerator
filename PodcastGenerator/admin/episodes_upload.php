@@ -11,6 +11,7 @@ require 'checkLogin.php';
 require '../core/include_admin.php';
 
 if (sizeof($_POST) > 0) {
+    checkToken();
     // CHeck if all fields are set (except "category")
     $req_fields = [
         $_POST['title'],
@@ -30,10 +31,10 @@ if (sizeof($_POST) > 0) {
     // If no categories were selected, add the 'uncategorized'
     // category.  Otherwise, ensure that no more than three categories
     // were actually selected.
-    if (sizeof((array)$_POST['category']) == 0) {
+    if (empty($_POST['category'])) {
         $_POST['category'] = array();
         array_push($_POST['category'], 'uncategorized');
-    } else if (sizeof((array)$_POST['category']) > 3) {
+    } else if (isset($_POST['category']) && sizeof((array)$_POST['category']) > 3) {
         $error = _('Too many categories selected (max: 3)');
         goto error;
     }
@@ -66,6 +67,13 @@ if (sizeof($_POST) > 0) {
         }
     }
 
+<<<<<<< HEAD
+=======
+    $link = str_replace('?', '', $config['link']);
+    $link = str_replace('=', '', $link);
+    $link = str_replace('$url', '', $link);
+
+>>>>>>> 6fe43e3ecf1d73da93b8a4de4e62776f19ab9b5b
     $targetfile = '../' . $config['upload_dir'] . $_POST['date'] . '_' . basename($_FILES['file']['name']);
     $targetfile = str_replace(' ', '_', $targetfile);
     if (file_exists($targetfile)) {
@@ -138,16 +146,23 @@ if (sizeof($_POST) > 0) {
     $episodefeed = '<?xml version="1.0" encoding="utf-8"?>
 <PodcastGenerator>
 	<episode>
+<<<<<<< HEAD
 	    <titlePG><![CDATA[' . htmlspecialchars($_POST['title'], ENT_NOQUOTES) . ']]></titlePG>
 	    <shortdescPG><![CDATA[' . htmlspecialchars($_POST['shortdesc']) . ']]></shortdescPG>
 	    <longdescPG><![CDATA[' . htmlspecialchars($_POST['longdesc']) . ']]></longdescPG>
+=======
+	    <guid>' . htmlspecialchars($config['url'] . "?" . $link . "=" . $targetfile) . '</guid>
+	    <titlePG>' . htmlspecialchars($_POST['title'], ENT_NOQUOTES) . '</titlePG>
+	    <shortdescPG><![CDATA[' . $_POST['shortdesc'] . ']]></shortdescPG>
+	    <longdescPG><![CDATA[' . $_POST['longdesc'] . ']]></longdescPG>
+>>>>>>> 6fe43e3ecf1d73da93b8a4de4e62776f19ab9b5b
 	    <imgPG></imgPG>
 	    <categoriesPG>
 	        <category1PG>' . htmlspecialchars($_POST['category'][0]) . '</category1PG>
 	        <category2PG>' . htmlspecialchars($_POST['category'][1]) . '</category2PG>
 	        <category3PG>' . htmlspecialchars($_POST['category'][2]) . '</category3PG>
 	    </categoriesPG>
-	    <keywordsPG><![CDATA[' . htmlspecialchars($_POST['itunesKeywords']) . ']]></keywordsPG>
+	    <keywordsPG>' . htmlspecialchars($_POST['itunesKeywords']) . '</keywordsPG>
 	    <explicitPG>' . $_POST['explicit'] . '</explicitPG>
 	    <authorPG>
 	        <namePG>' . htmlspecialchars($_POST['authorname']) . '</namePG>
@@ -169,6 +184,7 @@ if (sizeof($_POST) > 0) {
         file_put_contents($img_filename, $fileinfo["comments"]["picture"][0]["data"]);
     }
     generateRSS();
+    pingServices();
     $success = true;
 
     error: echo ('');
@@ -253,13 +269,15 @@ if (sizeof($_POST) > 0) {
                     </div>
                     <div class="form-group">
                         <?php echo _('Explicit content'); ?>:<br>
-                        <input type="radio" value="yes" name="explicit"> <?php echo _('Yes'); ?> <input type="radio" value="no" name="explicit" checked> <?php echo _('No'); ?><br>
+                        <label><input type="radio" value="yes" name="explicit"> <?php echo _('Yes'); ?></label>
+                        <label><input type="radio" value="no" name="explicit" checked> <?php echo _('No'); ?></label><br>
                     </div>
                     <div class="form-group">
                         <?php echo _('Author'); ?>*:<br>
                         <input type="text" class="form-control" name="authorname" placeholder="<?php echo htmlspecialchars($config["author_name"]); ?>"><br>
                         <input type="email" class="form-control" name="authoremail" placeholder="<?php echo htmlspecialchars($config["author_email"]); ?>"><br>
                     </div>
+                    <input type="hidden" name="token" value="<?php echo $_SESSION['token']; ?>">
                     <input type="submit" class="btn btn-success btn-lg" value="<?php echo _('Upload episode'); ?>">
                 </div>
             </div>

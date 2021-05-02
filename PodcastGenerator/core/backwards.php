@@ -9,10 +9,17 @@
 ############################################################
 function backwards_3_1_to_3_2($absoluteurl)
 {
+    session_start();
+    session_destroy();
     global $config;
     global $version;
+<<<<<<< HEAD
     // Quit if version is not 3.0
     if(!($config['podcastgen_version'] == '3.1')) {
+=======
+    // Quit if version is not 3.1 or 3.1.1
+    if(!($config['podcastgen_version'] == '3.1' || $config['podcastgen_version'] == '3.1.1')) {
+>>>>>>> 6fe43e3ecf1d73da93b8a4de4e62776f19ab9b5b
         return;
     }
     $config_php = "<?php
@@ -91,6 +98,11 @@ function backwards_3_1_to_3_2($absoluteurl)
 \$explicit_podcast = \"".$config['explicit_podcast']."\"; //does your podcast contain explicit language? (\"yes\" or \"no\")
 
 \$users_json = \"".$config['users_json']."\";
+
+#####################
+# WebSub
+
+\$websub_server = \"\";
 
 // END OF CONFIG
 ";
