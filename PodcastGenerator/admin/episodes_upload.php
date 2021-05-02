@@ -17,9 +17,7 @@ if (sizeof($_POST) > 0) {
         $_POST['shortdesc'],
         $_POST['date'],
         $_POST['time'],
-        $_POST['explicit'],
-        $_POST['authorname'],
-        $_POST['authoremail']
+        $_POST['explicit']
     ];
     // Check if fields are missing
     for ($i = 0; $i < sizeof($req_fields); $i++) {
@@ -32,10 +30,10 @@ if (sizeof($_POST) > 0) {
     // If no categories were selected, add the 'uncategorized'
     // category.  Otherwise, ensure that no more than three categories
     // were actually selected.
-    if (sizeof($_POST['category']) == 0) {
+    if (sizeof((array)$_POST['category']) == 0) {
         $_POST['category'] = array();
         array_push($_POST['category'], 'uncategorized');
-    } else if (sizeof($_POST['category']) > 3) {
+    } else if (sizeof((array)$_POST['category']) > 3) {
         $error = _('Too many categories selected (max: 3)');
         goto error;
     }
@@ -48,7 +46,7 @@ if (sizeof($_POST) > 0) {
     }
 
     // Check author e-mail
-    if (isset($_POST['authoremail'])) {
+    if (!empty($_POST['authoremail'])) {
         if (!filter_var($_POST['authoremail'], FILTER_VALIDATE_EMAIL)) {
             $error = _('Invalid Author E-Mail provided');
             goto error;
@@ -68,17 +66,18 @@ if (sizeof($_POST) > 0) {
         }
     }
 
-    $targetfile = '../' . $config['upload_dir'] . $_POST['date'] . '-' . basename($_FILES['file']['name']);
+    $targetfile = '../' . $config['upload_dir'] . $_POST['date'] . '_' . basename($_FILES['file']['name']);
     $targetfile = str_replace(' ', '_', $targetfile);
     if (file_exists($targetfile)) {
         $appendix = 1;
         while (file_exists($targetfile)) {
-            $targetfile = '../' . $config['upload_dir'] . $_POST['date'] . '-' . $appendix . '-' . basename($_FILES['file']['name']);
+            $targetfile = '../' . $config['upload_dir'] . $_POST['date'] . '_' . $appendix . '_' . basename($_FILES['file']['name']);
             $targetfile = str_replace(' ', '_', $targetfile);
             $appendix++;
         }
     }
-    $targetfile_without_ext = '../' . $config['upload_dir'] . pathinfo($targetfile, PATHINFO_FILENAME);
+    $targetfile = strtolower($targetfile);
+    $targetfile_without_ext = strtolower('../' . $config['upload_dir'] . pathinfo($targetfile, PATHINFO_FILENAME));
 
     $validTypes = simplexml_load_file('../components/supported_media/supported_media.xml');
     $fileextension = pathinfo($targetfile, PATHINFO_EXTENSION);
@@ -133,13 +132,13 @@ if (sizeof($_POST) > 0) {
     $duration = $fileinfo['playtime_string'];           // Get duration
     $bitrate = $fileinfo['audio']['bitrate'];           // Get bitrate
     $frequency = $fileinfo['audio']['sample_rate'];     // Frequency
-
+     
     // Go and actually generate the episode
     // It easier to not dynamically generate the file
     $episodefeed = '<?xml version="1.0" encoding="utf-8"?>
 <PodcastGenerator>
 	<episode>
-	    <titlePG><![CDATA[' . htmlspecialchars($_POST['title']) . ']]></titlePG>
+	    <titlePG><![CDATA[' . htmlspecialchars($_POST['title'], ENT_NOQUOTES) . ']]></titlePG>
 	    <shortdescPG><![CDATA[' . htmlspecialchars($_POST['shortdesc']) . ']]></shortdescPG>
 	    <longdescPG><![CDATA[' . htmlspecialchars($_POST['longdesc']) . ']]></longdescPG>
 	    <imgPG></imgPG>
@@ -258,8 +257,8 @@ if (sizeof($_POST) > 0) {
                     </div>
                     <div class="form-group">
                         <?php echo _('Author'); ?>*:<br>
-                        <input type="text" class="form-control" name="authorname" placeholder="<?php echo _('Author Name'); ?>" value="<?php echo htmlspecialchars($config["author_name"]); ?>"><br>
-                        <input type="email" class="form-control" name="authoremail" placeholder="<?php echo _('Author E-Mail'); ?>" value="<?php echo htmlspecialchars($config["author_email"]); ?>"><br>
+                        <input type="text" class="form-control" name="authorname" placeholder="<?php echo htmlspecialchars($config["author_name"]); ?>"><br>
+                        <input type="email" class="form-control" name="authoremail" placeholder="<?php echo htmlspecialchars($config["author_email"]); ?>"><br>
                     </div>
                     <input type="submit" class="btn btn-success btn-lg" value="<?php echo _('Upload episode'); ?>">
                 </div>

@@ -28,6 +28,8 @@ function generateRSS()
 		<lastBuildDate>' . date('r') . '</lastBuildDate>
 		<language>' . substr($config['feed_language'], 0, 2) . '</language>
 		<copyright>' . htmlspecialchars($config['copyright']) . '</copyright>
+		<managingEditor>' . htmlspecialchars($config['author_email']) . '</managingEditor>
+		<webMaster>' . htmlspecialchars($config['webmaster']) . '</webMaster>
 		<itunes:image href="' . $config['url'] . $config['img_dir'] . 'itunes_image.jpg" />
 		<image>
 			<url>' . $config['url'] . $config['img_dir'] . 'itunes_image.jpg</url>
@@ -133,7 +135,7 @@ function generateRSS()
         $item .= $indent . '<title>' . $file->episode->titlePG . '</title>' . $linebreak;
         $item .= $indent . '<itunes:subtitle>' . $file->episode->shortdescPG . '</itunes:subtitle>' . $linebreak;
         $item .= $indent . '<description>' . $file->episode->shortdescPG . '</description>' . $linebreak;
-        if ($file->episode->longdescPG == "<![CDATA[]]>") {
+        if ($file->episode->longdescPG != "<![CDATA[]]>") {
             $item .= $indent . '<itunes:summary><![CDATA[' . $file->episode->longdescPG . ']]></itunes:summary>' . $linebreak;
         }
         $item .= $indent . '<link>' . $config['url'] . '?' . $link . '=' . $files[$i]['filename'] . '</link>' . $linebreak;
